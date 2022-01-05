@@ -1,0 +1,47 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+#
+# NOTE: This workflow is overkill for most R packages and
+# check-standard.yaml is likely a better choice.
+# usethis::use_github_action("check-standard") will install it.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+name: non-utf-8
+
+jobs:
+  r-cmd-check:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: >
+          echo "en_US.ISO-8859-15 ISO-8859-15" >> /etc/locale.gen && \
+            echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen &&           \
+            locale-gen en_US.ISO-8859-15 &&                          \
+            locale-gen en_US.UTF-8 &&                                \
+            /usr/sbin/update-locale LANG=en_US.ISO-8859-15           \
+            /usr/sbin/update-locale LANG=en_US.UTF-8
+
+          echo "LC_ALL=en_US.iso885915" >> $GITHUB_ENV
+          echo "LANG=en_US.iso885915" >> $GITHUB_ENV
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - uses: r-lib/actions/check-r-package@v2
